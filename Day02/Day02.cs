@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 
 Console.WriteLine(Part1());
+Console.WriteLine(Part2());
 
 int Part1() =>
     Game
@@ -8,17 +9,25 @@ int Part1() =>
         .Where(g => g.IsMatch(12, 13, 14))
         .Sum(g => g.Id);
 
-internal enum Cube { Red, Green, Blue };
+int Part2() =>
+    Game
+        .ParseAll(Input.GetInput())
+        .Select(x => x.GetMinSet())
+        .Select(x => x.red * x.green * x.blue)
+        .Sum();
+
 internal record struct Set(int red, int green, int blue)
 {
     internal bool IsMatch(int red, int green, int blue) => this.red <= red && this.green <= green && this.blue <= blue;
-
 }
+
 internal sealed partial class Game(int id, List<Set> sets) {
     internal int Id => id;
     internal List<Set> Sets => sets;
 
     internal bool IsMatch(int red, int green, int blue) => Sets.All(s => s.IsMatch(red, green, blue));
+
+    internal Set GetMinSet() => new Set(Sets.Max(s => s.red), Sets.Max(s => s.green), Sets.Max(s => s.blue));
 
     internal static Game Parse(string line)
     {
