@@ -1,11 +1,23 @@
-﻿using Advent.Util;
+﻿using System.Net.Http.Headers;
+using System.Security.Cryptography.X509Certificates;
+using Advent.Util;
 
 Part1("Input.txt");
+Part2("Input.txt");
 void Part1(string filePath)
 {
     var schematic = new Schematic(filePath);
     var sum = 0;
     foreach (var number in schematic.GetPartNumbers())
+        sum += number;
+    Console.WriteLine(sum);
+}
+
+void Part2(string filePath)
+{
+    var schematic = new Schematic(filePath);
+    var sum = 0;
+    foreach (var number in schematic.GetGearRatios())
         sum += number;
     Console.WriteLine(sum);
 }
@@ -48,28 +60,101 @@ internal sealed class Schematic
         }
     }
 
-    public IEnumerable<(Memory<char> Memory, int Row, int Column)> GetNumbers()
+    public GridSpan<char>? GetNumber(int row, int column)
+    {
+        var span = Grid.GetGridSpan(row);
+        if (!char.IsDigit(span[column]))
+        {
+            return null;
+        }
+
+        var start = column;
+        while (start > 0 && char.IsDigit(span[start - 1]))
+        {
+            start--;
+        }
+
+        while (column + 1 < span.Length && char.IsDigit(span[column + 1]))
+        {
+            column++;
+        }
+
+        return span.Slice(start, (column - start) + 1);
+    }
+
+    public IEnumerable<int> GetGearRatios()
     {
         for (int r = 0; r < Grid.Rows; r++)
         {
-            var memory = Grid.GetRowMemory(r);
-            var column = 0;
-            while (column < memory.Length)
+            for (int c = 0; c < Grid.Columns; c++)
             {
-                if (!char.IsDigit(memory.Span[column]))
+                if ('*' == Grid.GetValue(r, c))
+                {
+                    var numbers = GetAdjacentNumbers(r, c).ToList();
+                    if (numbers.Count == 2)
+                    {
+                        var number1 = int.Parse(numbers[0].Span);
+                        var number2 = int.Parse(numbers[1].Span);
+                        yield return number1 * number2;
+                    }
+                }
+            }
+        }
+    }
+
+    public IEnumerable<GridSpan<char>> GetAdjacentNumbers(int row, int column)
+    {
+        var startColumn = column == 0 ? 0 : column - 1;
+        var maxColumn = Math.Min(column + 1, Grid.Columns - 1);
+        var r = row == 0 ? 0 : row - 1;
+        var c = startColumn;
+        while (r <= row + 1 && row < Grid.Rows)
+        {
+            while (c <= maxColumn)
+            {
+                if (r == row && c == column)
+                {
+                    c++;
+                    continue;
+                }
+
+                var span = GetNumber(r, c);
+                if (span.HasValue)
+                {
+                    yield return span.Value;
+                    c = span.Value.End;
+                }
+                else
+                {
+                    c++;
+                }
+            }
+
+            r++;
+            c = startColumn;
+        }
+    }
+
+    public IEnumerable<GridSpan<char>> GetNumbers()
+    {
+        foreach (var gridSpan in Grid.GetGridSpans())
+        {
+            var column = 0;
+            while (column < gridSpan.Length)
+            {
+                if (!char.IsDigit(gridSpan[column]))
                 {
                     column++;
                     continue;
                 }
 
                 var start = column;
-                while (column < memory.Length && char.IsDigit(memory.Span[column]))
+                while (column < gridSpan.Length && char.IsDigit(gridSpan[column]))
                 {
                     column++;
                 }
 
-                var number = memory.Slice(start, column - start);
-                yield return (number, r, start);
+                yield  return gridSpan.Slice(start, column - start);
             }
         }
     }
