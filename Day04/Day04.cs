@@ -9,7 +9,7 @@ void Part1(string filePath)
 {
     var cards = Card.ParseAll(filePath);
     var score = cards
-        .Select(x => x.GetWinningCount())
+        .Select(x => x.GetMatchCount())
         .Where(x => x > 0)
         .Select(x => Math.Pow(2, x - 1))
         .Sum();
@@ -18,11 +18,29 @@ void Part1(string filePath)
 
 void Part2(string filePath)
 {
+    var cards = Card.ParseAll(filePath);
+    var copyCount = new int[cards.Count];
+    Array.Fill(copyCount, 1);
+
+    for (int i = 0; i < cards.Count; i++)
+    {
+        var card = cards[i];
+        var matchCount = card.GetMatchCount();
+        if (matchCount == 0)
+            continue;
+
+        var increment = copyCount[i];
+        for (int j = 1; j <= matchCount && j + i < copyCount.Length; j++)
+        {
+            copyCount[i + j] += increment;
+        }
+    }
+    Console.WriteLine(copyCount.Sum());
 }
 
 internal sealed class Card(HashSet<int> winningSet, HashSet<int> foundSet)
 {
-    internal int GetWinningCount()
+    internal int GetMatchCount()
     {
         var count = 0;
         foreach (var number in foundSet)
